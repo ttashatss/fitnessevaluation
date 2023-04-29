@@ -54,10 +54,13 @@ class PoseDetect:
         # detect if the user is performing squat and return as an array consisting of [back angle, knee angle, neck angle, is squat]
         sq = [0,0,0,False]
         if len(lmList) > 27:
-            sq[0] = self.getAngle(lmList[25], lmList[23], lmList[11]) # calculate back angle
-            sq[1] = self.getAngle(lmList[23], lmList[25], lmList[27]) # calculate knee angle
-            sq[2] = self.getVerticalAngle(lmList[11], lmList[2]) # calculate neck angle
-            sq[3] = (sq[0] < 90 and sq[0] > 80) and (sq[1] < 90 and sq[1] > 80) and (sq[2] < 45) # determine if is squat
+            back = self.getAngle(lmList[25], lmList[23], lmList[11]) # calculate back angle
+            sq[0] = 1 if back > 90 else -1 if back < 80 else 0
+            knee = self.getAngle(lmList[23], lmList[25], lmList[27]) # calculate knee angle
+            sq[1] = 1 if back > 90 else -1 if back < 80 else 0
+            neck = self.getVerticalAngle(lmList[11], lmList[2]) # calculate neck angle
+            sq[2] = 1 if neck > 45 else 0
+            sq[3] = (sq[0] == 0) and (sq[1] == 0) and (sq[2] == 0) # determine if is squat
         return sq
     
     def detectUp(self, lmList):
@@ -81,8 +84,13 @@ def main():
         success, img = cap.read()
         img = detector.findPose(img) # find pose landmarks from the image
         lmList = detector.getPosition(img) # find x y coordinates of the landamarks
-        
         isSquat = detector.detectSquat(lmList) # detect if user is performing squat
+       
+        if isSquat[0] == 1: cv2.putText(img, "bend your back forward", (50, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1) 
+        if isSquat[1] == 1: cv2.putText(img, "lower yourself by bending your knee", (50, 175), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+        if isSquat[2] == 1: cv2.putText(img, "keep your head straight", (50, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1) 
+
+
         if isSquat[3]:
             if not prevSquat:
                 count += 1
@@ -95,11 +103,13 @@ def main():
         fps = 1 / (cTime - pTime)
         pTime = cTime
 
-        cv2.putText(img, "back angle: " + str(isSquat[0]), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-        cv2.putText(img, "knee angle: " + str(isSquat[1]), (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-        cv2.putText(img, "neck angle: " + str(isSquat[2]), (50, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-        cv2.putText(img, str(isSquat[3]), (50, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-        cv2.putText(img, str(count), (50, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        # cv2.putText(img, "back angle: " + str(isSquat[0]), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        # cv2.putText(img, "knee angle: " + str(isSquat[1]), (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        # cv2.putText(img, "neck angle: " + str(isSquat[2]), (50, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        # cv2.putText(img, str(isSquat[3]), (50, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.putText(img, "no. of squats: " + str(count), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.putText(img, "calorie burn: " + str(count*0.32), (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
 
         cv2.imshow("Image", img)
         cv2.waitKey(1)
