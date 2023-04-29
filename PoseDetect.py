@@ -57,11 +57,20 @@ class PoseDetect:
             sq[0] = self.getAngle(lmList[25], lmList[23], lmList[11]) # calculate back angle
             sq[1] = self.getAngle(lmList[23], lmList[25], lmList[27]) # calculate knee angle
             sq[2] = self.getVerticalAngle(lmList[11], lmList[2]) # calculate neck angle
-            sq[3] = (sq[0] < 60 and sq[0] > 40) and (sq[1] < 95 and sq[1] > 75) and (sq[2] < 45) # determine if is squat
+            sq[3] = (sq[0] < 90 and sq[0] > 80) and (sq[1] < 90 and sq[1] > 80) and (sq[2] < 45) # determine if is squat
         return sq
     
+    def detectUp(self, lmList):
+        up = False
+        if len(lmList) > 27:
+            back = self.getAngle(lmList[25], lmList[23], lmList[11])
+            knee = self.getAngle(lmList[23], lmList[25], lmList[27])
+            up = (back > 120) and (knee > 120)
+        return up
+        
+    
 def main():
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture('squat.mp4')
     pTime = 0
     detector = PoseDetect()
     isSquat = [0,0,0,False] 
@@ -78,9 +87,9 @@ def main():
             if not prevSquat:
                 count += 1
             prevSquat = True
-        else:
+        if detector.detectUp(lmList):
             prevSquat = False
-
+        
         # get fps
         cTime = time.time()
         fps = 1 / (cTime - pTime)
